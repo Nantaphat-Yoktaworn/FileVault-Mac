@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>FileVault 🔐</title>
+<meta name="description" content="Encrypt files with a password — 100% on your device">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0b1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FileVault">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-180.png">
+<style>
+  :root {
+    --bg: #0d0b1e;
+    --card: rgba(255, 255, 255, 0.06);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --text: #f0eefa;
+    --text-dim: #9b96b8;
+    --accent: #8b5cf6;
+    --accent2: #06b6d4;
+    --green: #34d399;
+    --red: #f87171;
+    --radius: 20px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    padding: max(env(safe-area-inset-top), 20px) 20px max(env(safe-area-inset-bottom), 20px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+  /* animated background blobs */
+  .blob {
+    position: fixed; border-radius: 50%; filter: blur(90px); opacity: .35; z-index: 0;
+    pointer-events: none;
+  }
+  .blob1 { width: 380px; height: 380px; background: #7c3aed; top: -120px; left: -120px; animation: drift 14s ease-in-out infinite alternate; }
+  .blob2 { width: 320px; height: 320px; background: #0891b2; bottom: -100px; right: -100px; animation: drift 18s ease-in-out infinite alternate-reverse; }
+  @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(40px, 30px) scale(1.15); } }
+
+  .app { width: 100%; max-width: 460px; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 18px; }
+
+  header { text-align: center; padding: 18px 0 4px; }
+  .logo {
+    font-size: 52px; line-height: 1;
+    filter: drop-shadow(0 6px 24px rgba(139, 92, 246, .5));
+    display: inline-block;
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  h1 {
+    font-size: 28px; font-weight: 800; margin-top: 10px;
+    background: linear-gradient(90deg, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .tagline { color: var(--text-dim); font-size: 13.5px; margin-top: 6px; }
+  .tagline .dot { color: var(--green); }
+
+  /* mode switch */
+  .modes { display: flex; gap: 10px; }
+  .mode-btn {
+    flex: 1; padding: 14px 10px; border-radius: 16px; border: 1.5px solid var(--card-border);
+    background: var(--card); color: var(--text-dim); font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .25s; font-family: inherit;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  .mode-btn.active-enc {
+    background: linear-gradient(135deg, rgba(139,92,246,.25), rgba(139,92,246,.1));
+    border-color: var(--accent); color: #d8ccff;
+    box-shadow: 0 4px 24px rgba(139,92,246,.25);
+  }
+  .mode-btn.active-dec {
+    background: linear-gradient(135deg, rgba(6,182,212,.25), rgba(6,182,212,.08));
+    border-color: var(--accent2); color: #a5f3fc;
+    box-shadow: 0 4px 24px rgba(6,182,212,.25);
+  }
+
+  .card {
+    background: var(--card); border: 1px solid var(--card-border);
+    border-radius: var(--radius); padding: 22px;
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  /* drop zone */
+  .drop {
+    border: 2px dashed rgba(255,255,255,.18); border-radius: 16px;
+    padding: 30px 16px; text-align: center; cursor: pointer; transition: all .25s;
+    background: rgba(255,255,255,.02);
+  }
+  .drop:active { transform: scale(.985); }
+  .drop.hover { border-color: var(--accent); background: rgba(139,92,246,.08); }
+  .drop .di { font-size: 38px; }
+  .drop .dt { font-size: 15px; font-weight: 600; margin-top: 10px; }
+  .drop .ds { font-size: 12.5px; color: var(--text-dim); margin-top: 5px; }
+  .drop.has-file { border-style: solid; border-color: rgba(52,211,153,.5); background: rgba(52,211,153,.06); }
+
+  .drop-summary { display: none; }
+  .drop.has-file .drop-summary { display: block; }
+  .drop.has-file .placeholder { display: none; }
+  .drop-summary .di2 { font-size: 34px; }
+  .drop-summary .dt2 { font-size: 15px; font-weight: 700; margin-top: 8px; }
+  .drop-summary .ds2 { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
+
+  /* picked files / decrypted results list */
+  .file-list { display: none; flex-direction: column; gap: 8px; max-height: 230px; overflow-y: auto; }
+  .file-list.show { display: flex; }
+  .frow {
+    display: flex; align-items: center; gap: 10px; text-align: left;
+    background: rgba(255,255,255,.04); border: 1px solid var(--card-border);
+    border-radius: 12px; padding: 10px 12px;
+  }
+  .frow .fi { font-size: 22px; flex-shrink: 0; }
+  .frow .fmeta { flex: 1; min-width: 0; }
+  .frow .fname { font-size: 13.5px; font-weight: 600; word-break: break-all; }
+  .frow .fsize { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+  .frow .fx {
+    flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+    border: none; background: rgba(255,255,255,.1); color: var(--text-dim);
+    font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .frow .dl {
+    flex-shrink: 0; border: none; border-radius: 10px; padding: 8px 13px;
+    background: rgba(6,182,212,.2); border: 1px solid rgba(6,182,212,.4);
+    color: #a5f3fc; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .list-actions { display: none; justify-content: space-between; gap: 10px; }
+  .list-actions.show { display: flex; }
+  .list-actions button {
+    flex: 1; border: none; border-radius: 12px; padding: 11px; font-size: 13px; font-weight: 700;
+    font-family: inherit; cursor: pointer; background: rgba(255,255,255,.07);
+    border: 1px solid var(--card-border); color: var(--text-dim);
+  }
+  .list-actions .dl-all { background: rgba(6,182,212,.18); border-color: rgba(6,182,212,.4); color: #a5f3fc; }
+
+  .folder-link {
+    display: none; background: none; border: none; color: var(--text-dim);
+    font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+    text-decoration: underline; text-underline-offset: 3px; padding: 2px;
+  }
+
+  /* password */
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field label { font-size: 13px; font-weight: 700; color: var(--text-dim); letter-spacing: .3px; }
+  .pw-wrap { position: relative; }
+  .pw-wrap input {
+    width: 100%; padding: 14px 52px 14px 16px; border-radius: 14px;
+    border: 1.5px solid var(--card-border); background: rgba(0,0,0,.25);
+    color: var(--text); font-size: 16px; font-family: inherit; outline: none;
+    transition: border-color .2s;
+  }
+  .pw-wrap input:focus { border-color: var(--accent); }
+  .pw-wrap .eye {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; font-size: 19px; cursor: pointer; padding: 8px;
+    opacity: .65;
+  }
+  .strength { height: 4px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .strength > div { height: 100%; width: 0%; border-radius: 99px; transition: all .35s; background: var(--red); }
+
+  /* action button */
+  .go {
+    padding: 17px; border: none; border-radius: 16px; font-size: 16.5px; font-weight: 800;
+    font-family: inherit; cursor: pointer; color: white; transition: all .25s;
+    position: relative; overflow: hidden;
+  }
+  .go:disabled { opacity: .4; cursor: not-allowed; }
+  .go.enc { background: linear-gradient(135deg, #8b5cf6, #6d28d9); box-shadow: 0 8px 28px rgba(139,92,246,.35); }
+  .go.dec { background: linear-gradient(135deg, #06b6d4, #0e7490); box-shadow: 0 8px 28px rgba(6,182,212,.35); }
+  .go:not(:disabled):active { transform: scale(.97); }
+
+  /* status */
+  .status {
+    display: none; padding: 14px 16px; border-radius: 14px; font-size: 14px; font-weight: 600;
+    line-height: 1.55; word-break: break-word;
+  }
+  .status.show { display: block; animation: pop .3s ease; }
+  .status.ok { background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.35); color: #a7f3d0; }
+  .status.err { background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.35); color: #fecaca; }
+  .status.busy { background: rgba(139,92,246,.12); border: 1px solid rgba(139,92,246,.35); color: #ddd6fe; }
+  @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; border: 2.5px solid rgba(255,255,255,.25);
+    border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite;
+    vertical-align: -2px; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* progress (streaming large files) */
+  .progress { display: none; flex-direction: column; gap: 6px; }
+  .progress.show { display: flex; }
+  .progress .ptrack { height: 8px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .progress .pbar {
+    height: 100%; width: 0%; border-radius: 99px; transition: width .2s ease;
+    background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+  }
+  .progress .ptext { font-size: 12px; color: var(--text-dim); text-align: center; font-variant-numeric: tabular-nums; }
+
+  footer { text-align: center; color: var(--text-dim); font-size: 11.5px; line-height: 1.7; padding-top: 4px; }
+  footer b { color: #c4b5fd; }
+
+  /* loading splash — shown until the page (incl. app.js) finishes loading */
+  #splash {
+    position: fixed; inset: 0; z-index: 100; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+    transition: opacity .4s ease, visibility .4s;
+  }
+  #splash .logo { font-size: 64px; filter: drop-shadow(0 6px 24px rgba(139,92,246,.5)); animation: float 4s ease-in-out infinite; }
+  #splash .sp {
+    width: 30px; height: 30px; border: 3px solid rgba(255,255,255,.18);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  #splash .lt { color: var(--text-dim); font-size: 13px; font-weight: 600; }
+  body.loaded #splash { opacity: 0; visibility: hidden; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="splash">
+  <span class="logo">🔐</span>
+  <div class="sp"></div>
+  <div class="lt">Loading…</div>
+</div>
+<script>addEventListener('load', function () { document.body.classList.add('loaded'); });</script>
+
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<div class="app">
+  <header>
+    <span class="logo">🔐</span>
+    <h1>FileVault</h1>
+    <div class="tagline"><span class="dot">●</span> 100% on-device encryption — your files never leave</div>
+  </header>
+
+  <div class="modes">
+    <button class="mode-btn active-enc" id="tabEnc">🔒 Encrypt</button>
+    <button class="mode-btn" id="tabDec">🔓 Decrypt</button>
+  </div>
+
+  <div class="card">
+    <div class="drop" id="drop">
+      <input type="file" id="fileInput" hidden multiple>
+      <input type="file" id="folderInput" hidden webkitdirectory>
+      <div class="placeholder">
+        <div class="di" id="dropIcon">📁</div>
+        <div class="dt" id="dropTitle">Tap to choose files</div>
+        <div class="ds" id="dropSub">Pick one or many — photos, videos, documents</div>
+      </div>
+      <div class="drop-summary">
+        <div class="di2" id="sumIcon">📦</div>
+        <div class="dt2" id="sumTitle"></div>
+        <div class="ds2" id="sumSub">Tap to add more files</div>
+      </div>
+    </div>
+    <button class="folder-link" id="pickFolderBtn">📂 …or choose an entire folder</button>
+
+    <div class="file-list" id="fileList"></div>
+    <div class="list-actions" id="pickActions">
+      <button id="clearAllBtn">🗑️ Clear all</button>
+    </div>
+
+    <div class="field">
+      <label id="pwLabel">Set a password</label>
+      <div class="pw-wrap">
+        <input type="password" id="password" placeholder="Password" autocomplete="off" autocapitalize="off">
+        <button class="eye" id="togglePw">👁️</button>
+      </div>
+      <div class="strength" id="strengthWrap"><div id="strengthBar"></div></div>
+    </div>
+
+    <div class="field" id="confirmField">
+      <label>Confirm password</label>
+      <div class="pw-wrap">
+        <input type="password" id="password2" placeholder="Re-enter password" autocomplete="off" autocapitalize="off">
+      </div>
+    </div>
+
+    <button class="go enc" id="goBtn" disabled>🔒 Encrypt File</button>
+    <div class="status" id="status"></div>
+    <div class="progress" id="progress">
+      <div class="ptrack"><div class="pbar" id="progressBar"></div></div>
+      <div class="ptext" id="progressText"></div>
+    </div>
+
+    <div class="file-list" id="results"></div>
+    <div class="list-actions" id="resultActions">
+      <button class="dl-all" id="dlAllBtn">⬇️ Download all</button>
+    </div>
+  </div>
+
+  <footer>
+    <b>AES-256-GCM</b> + <b>PBKDF2 600,000 rounds</b> via the Web Crypto API<br>
+    ⚠️ Forgot your password? The file cannot be recovered — no backdoors.
+  </footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
