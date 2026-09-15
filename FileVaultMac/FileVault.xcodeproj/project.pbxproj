@@ -7,6 +7,7 @@
 
 /* Begin PBXBuildFile section */
 		A001 /* FileVaultMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A101 /* FileVaultMacApp.swift */; };
+		A008 /* FileDropZone.swift in Sources */ = {isa = PBXBuildFile; fileRef = A110 /* FileDropZone.swift */; };
 		A002 /* VaultCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A102 /* VaultCore.swift */; };
 		A003 /* VaultStreaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = A103 /* VaultStreaming.swift */; };
 		A007 /* VaultFileDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A109 /* VaultFileDiscovery.swift */; };
@@ -17,6 +18,7 @@
 
 /* Begin PBXFileReference section */
 		A101 /* FileVaultMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/FileVaultMacApp/FileVaultMacApp.swift; sourceTree = "<group>"; };
+		A110 /* FileDropZone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/FileVaultMacApp/FileDropZone.swift; sourceTree = "<group>"; };
 		A102 /* VaultCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/VaultCore/VaultCore.swift; sourceTree = "<group>"; };
 		A103 /* VaultStreaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/VaultCore/VaultStreaming.swift; sourceTree = "<group>"; };
 		A109 /* VaultFileDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/VaultCore/VaultFileDiscovery.swift; sourceTree = "<group>"; };
@@ -33,7 +35,7 @@
 
 /* Begin PBXGroup section */
 		A301 = {isa = PBXGroup; children = (A302 /* Sources */, A108 /* Info.plist */, A303 /* Frameworks */, A304 /* Products */); sourceTree = "<group>"; };
-		A302 /* Sources */ = {isa = PBXGroup; children = (A101 /* FileVaultMacApp.swift */, A102 /* VaultCore.swift */, A103 /* VaultStreaming.swift */, A109 /* VaultFileDiscovery.swift */); name = Sources; sourceTree = "<group>"; };
+		A302 /* Sources */ = {isa = PBXGroup; children = (A101 /* FileVaultMacApp.swift */, A110 /* FileDropZone.swift */, A102 /* VaultCore.swift */, A103 /* VaultStreaming.swift */, A109 /* VaultFileDiscovery.swift */); name = Sources; sourceTree = "<group>"; };
 		A303 /* Frameworks */ = {isa = PBXGroup; children = (A104 /* AppKit.framework */, A105 /* SwiftUI.framework */, A106 /* UniformTypeIdentifiers.framework */); name = Frameworks; sourceTree = "<group>"; };
 		A304 /* Products */ = {isa = PBXGroup; children = (A107 /* FileVault.app */); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
@@ -47,7 +49,7 @@
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A202 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A001 /* FileVaultMacApp.swift in Sources */, A002 /* VaultCore.swift in Sources */, A003 /* VaultStreaming.swift in Sources */, A007 /* VaultFileDiscovery.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+		A202 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A001 /* FileVaultMacApp.swift in Sources */, A008 /* FileDropZone.swift in Sources */, A002 /* VaultCore.swift in Sources */, A003 /* VaultStreaming.swift in Sources */, A007 /* VaultFileDiscovery.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */

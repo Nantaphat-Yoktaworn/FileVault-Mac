@@ -10,7 +10,6 @@ func v3StreamingRoundTrip() throws {
     let vault = root.appending(path: "large.nnnn")
     defer { try? FileManager.default.removeItem(at: root) }
     try FileManager.default.createDirectory(at: input, withIntermediateDirectories: true)
-    try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
 
     let first = Data((0..<2_300).map { UInt8($0 % 251) })
     let second = Data("file boundary".utf8)
@@ -31,6 +30,64 @@ func v3StreamingRoundTrip() throws {
     #expect(try Data(contentsOf: output.appending(path: "docs/first.bin")) == first)
     #expect(try Data(contentsOf: output.appending(path: "second.txt")) == second)
     #expect(try Data(contentsOf: output.appending(path: "empty.bin")) == empty)
+}
+
+@Test("v3 streaming encryption stops before publishing a vault when cancelled")
+func v3StreamingCancellationLeavesNoVault() throws {
+    let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    let sourceURL = root.appending(path: "source.bin")
+    let vault = root.appending(path: "vault.nnnn")
+    try Data(repeating: 7, count: 2_000).write(to: sourceURL)
+
+    #expect(throws: VaultError.cancelled) {
+        try VaultStreaming.encrypt(
+            inputs: [VaultFileSource(url: sourceURL, path: "source.bin")],
+            password: "password",
+            destination: vault,
+            chunkSize: 1_000,
+            shouldCancel: { true }
+        )
+    }
+    #expect(!FileManager.default.fileExists(atPath: vault.path))
+}
+
+@Test("v3 streaming decryption removes temporary output after authentication failure")
+func v3DecryptionFailureLeavesNoOutput() throws {
+    let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    let sourceURL = root.appending(path: "source.bin")
+    let vault = root.appending(path: "vault.nnnn")
+    let output = root.appending(path: "restored")
+    try Data(repeating: 9, count: 2_000).write(to: sourceURL)
+    try VaultStreaming.encrypt(inputs: [VaultFileSource(url: sourceURL, path: "source.bin")], password: "password", destination: vault, chunkSize: 1_000)
+    var corrupt = try Data(contentsOf: vault)
+    corrupt[corrupt.count - 1] ^= 0xff
+    try corrupt.write(to: vault, options: .atomic)
+
+    #expect(throws: VaultError.authenticationFailed) {
+        try VaultStreaming.decrypt(vault: vault, password: "password", outputDirectory: output)
+    }
+    #expect(!FileManager.default.fileExists(atPath: output.path))
+}
+
+@Test("v3 streaming decryption removes temporary output when cancelled")
+func v3DecryptionCancellationLeavesNoOutput() throws {
+    let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    let sourceURL = root.appending(path: "source.bin")
+    let vault = root.appending(path: "vault.nnnn")
+    let output = root.appending(path: "restored")
+    try Data(repeating: 9, count: 2_000).write(to: sourceURL)
+    try VaultStreaming.encrypt(inputs: [VaultFileSource(url: sourceURL, path: "source.bin")], password: "password", destination: vault, chunkSize: 1_000)
+
+    #expect(throws: VaultError.cancelled) {
+        try VaultStreaming.decrypt(vault: vault, password: "password", outputDirectory: output, shouldCancel: { true })
+    }
+    #expect(!FileManager.default.fileExists(atPath: output.path))
 }
 
 @Test("v3 streaming vault rejects a modified chunk")

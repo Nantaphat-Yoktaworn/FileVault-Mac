@@ -27,8 +27,10 @@ public enum VaultStreaming {
         password: String,
         destination: URL,
         chunkSize: Int = defaultChunkSize,
-        progress: ((UInt64, UInt64) -> Void)? = nil
+        progress: ((UInt64, UInt64) -> Void)? = nil,
+        shouldCancel: () -> Bool = { false }
     ) throws {
+        guard !shouldCancel() else { throw VaultError.cancelled }
         guard !inputs.isEmpty, chunkSize > 0, chunkSize <= maxChunkSize else { throw VaultError.invalidEntry }
         for source in inputs { try validateRelativePath(source.path) }
         let total = try inputs.reduce(UInt64(0)) { try checkedAdd($0, $1.size) }
@@ -44,9 +46,14 @@ public enum VaultStreaming {
         let manifestBytes = try JSONEncoder().encode(manifest)
         let manifestCipher = try seal(manifestBytes, key: key, prefix: prefix, counter: 0, isLast: false)
 
-        FileManager.default.createFile(atPath: destination.path, contents: nil)
-        let output = try FileHandle(forWritingTo: destination)
-        defer { try? output.close() }
+        let temporary = VaultOutput.temporarySibling(of: destination)
+        FileManager.default.createFile(atPath: temporary.path, contents: nil)
+        let output = try FileHandle(forWritingTo: temporary)
+        var published = false
+        defer {
+            try? output.close()
+            if !published { try? FileManager.default.removeItem(at: temporary) }
+        }
         var header = Data("NNNN3".utf8)
         header.append(salt)
         header.append(prefix)
@@ -60,9 +67,11 @@ public enum VaultStreaming {
         var complete: UInt64 = 0
         var pending = Data()
         for source in inputs {
+            guard !shouldCancel() else { throw VaultError.cancelled }
             let input = try FileHandle(forReadingFrom: source.url)
             defer { try? input.close() }
             while let bytes = try input.read(upToCount: min(chunkSize - pending.count, 1_048_576)), !bytes.isEmpty {
+                guard !shouldCancel() else { throw VaultError.cancelled }
                 pending.append(bytes)
                 if pending.count == chunkSize {
                     counter += 1
@@ -74,6 +83,7 @@ public enum VaultStreaming {
                 }
             }
         }
+        guard !shouldCancel() else { throw VaultError.cancelled }
         if !pending.isEmpty {
             counter += 1
             let cipher = try seal(pending, key: key, prefix: prefix, counter: counter, isLast: true)
@@ -82,6 +92,10 @@ public enum VaultStreaming {
             progress?(complete, total)
         }
         guard UInt64(counter) == totalChunks, complete == total else { throw VaultError.malformedVault }
+        guard !shouldCancel() else { throw VaultError.cancelled }
+        try output.close()
+        try VaultOutput.publish(temporary: temporary, to: destination)
+        published = true
     }
 
     @discardableResult
@@ -89,8 +103,10 @@ public enum VaultStreaming {
         vault: URL,
         password: String,
         outputDirectory: URL,
-        progress: ((UInt64, UInt64) -> Void)? = nil
+        progress: ((UInt64, UInt64) -> Void)? = nil,
+        shouldCancel: () -> Bool = { false }
     ) throws -> [URL] {
+        guard !shouldCancel() else { throw VaultError.cancelled }
         let input = try FileHandle(forReadingFrom: vault)
         defer { try? input.close() }
         let header = try readExactly(input, count: fixedHeaderLength)
@@ -112,17 +128,23 @@ public enum VaultStreaming {
         guard total == manifest.totalSize else { throw VaultError.malformedVault }
         for file in manifest.files { try validateRelativePath(file.name) }
 
-        try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
+        let temporary = VaultOutput.temporarySibling(of: outputDirectory)
+        try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+        var published = false
+        defer {
+            if !published { try? FileManager.default.removeItem(at: temporary) }
+        }
         var restored: [URL] = []
         var fileIndex = 0
         var remaining: UInt64 = 0
         var output: FileHandle?
         func openNext() throws {
+            guard !shouldCancel() else { throw VaultError.cancelled }
             try output?.close()
             output = nil
             while fileIndex < manifest.files.count {
                 let file = manifest.files[fileIndex]
-                let url = outputDirectory.appending(path: file.name)
+                let url = temporary.appending(path: file.name)
                 try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
                 FileManager.default.createFile(atPath: url.path, contents: nil)
                 restored.append(url)
@@ -140,6 +162,7 @@ public enum VaultStreaming {
         var complete: UInt64 = 0
         if chunks > UInt64(UInt32.max) { throw VaultError.malformedVault }
         for i in 1...Int(chunks) {
+            guard !shouldCancel() else { throw VaultError.cancelled }
             let plainLength = Int(min(UInt64(chunkSize), total - UInt64(i - 1) * UInt64(chunkSize)))
             let cipher = try readExactly(input, count: plainLength + 16)
             let plain = try open(cipher, key: key, prefix: prefix, counter: UInt32(i), isLast: i == Int(chunks))
@@ -162,7 +185,10 @@ public enum VaultStreaming {
         guard fileIndex == manifest.files.count, complete == total, (try input.read(upToCount: 1) ?? Data()).isEmpty else {
             throw VaultError.malformedVault
         }
-        return restored
+        guard !shouldCancel() else { throw VaultError.cancelled }
+        try VaultOutput.publish(temporary: temporary, to: outputDirectory)
+        published = true
+        return restored.map { outputDirectory.appending(path: String($0.path.dropFirst(temporary.path.count + 1))) }
     }
 
     private static func seal(_ plain: Data, key: SymmetricKey, prefix: Data, counter: UInt32, isLast: Bool) throws -> Data {

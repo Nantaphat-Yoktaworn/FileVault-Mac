@@ -13,6 +13,7 @@ public enum VaultError: Error, Equatable, Sendable {
     case malformedVault
     case authenticationFailed
     case invalidEntry
+    case cancelled
 }
 
 public struct VaultEntry: Equatable, Sendable {
@@ -22,6 +23,78 @@ public struct VaultEntry: Equatable, Sendable {
     public init(path: String, bytes: Data) {
         self.path = path
         self.bytes = bytes
+    }
+}
+
+public enum VaultOutputResolution: Sendable {
+    case keepBoth
+    case replace
+    case cancel
+}
+
+public enum VaultOutput {
+    public static func plannedDestination(for target: URL, resolution: VaultOutputResolution) throws -> URL? {
+        let manager = FileManager.default
+        guard resolution != .cancel else { return nil }
+        guard manager.fileExists(atPath: target.path), resolution == .keepBoth else { return target }
+
+        let directory = target.deletingLastPathComponent()
+        let extensionName = target.pathExtension
+        let stem = target.deletingPathExtension().lastPathComponent
+        for index in 2...10_000 {
+            let filename = extensionName.isEmpty ? "\(stem) \(index)" : "\(stem) \(index).\(extensionName)"
+            let candidate = directory.appending(path: filename)
+            if !manager.fileExists(atPath: candidate.path) { return candidate }
+        }
+        throw VaultError.invalidEntry
+    }
+
+    public static func restore(entries: [VaultEntry], outputDirectory: URL, shouldCancel: () -> Bool = { false }) throws {
+        guard !entries.isEmpty else { throw VaultError.invalidEntry }
+        let temporary = temporarySibling(of: outputDirectory)
+        var published = false
+        defer { if !published { try? FileManager.default.removeItem(at: temporary) } }
+        try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+        for entry in entries {
+            guard !shouldCancel() else { throw VaultError.cancelled }
+            let path = try safeRelativePath(entry.path)
+            let destination = temporary.appending(path: path)
+            try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try entry.bytes.write(to: destination, options: .atomic)
+        }
+        guard !shouldCancel() else { throw VaultError.cancelled }
+        try publish(temporary: temporary, to: outputDirectory)
+        published = true
+    }
+
+    public static func write(_ data: Data, to destination: URL, shouldCancel: () -> Bool = { false }) throws {
+        guard !shouldCancel() else { throw VaultError.cancelled }
+        let temporary = temporarySibling(of: destination)
+        var published = false
+        defer { if !published { try? FileManager.default.removeItem(at: temporary) } }
+        try data.write(to: temporary, options: .atomic)
+        guard !shouldCancel() else { throw VaultError.cancelled }
+        try publish(temporary: temporary, to: destination)
+        published = true
+    }
+
+    static func temporarySibling(of target: URL) -> URL {
+        target.deletingLastPathComponent().appendingPathComponent(".\(target.lastPathComponent).\(UUID().uuidString).tmp")
+    }
+
+    static func publish(temporary: URL, to destination: URL) throws {
+        let manager = FileManager.default
+        if manager.fileExists(atPath: destination.path) {
+            _ = try manager.replaceItemAt(destination, withItemAt: temporary)
+        } else {
+            try manager.moveItem(at: temporary, to: destination)
+        }
+    }
+
+    private static func safeRelativePath(_ path: String) throws -> String {
+        let parts = path.split(separator: "/", omittingEmptySubsequences: false)
+        guard !path.hasPrefix("/"), !parts.isEmpty, !parts.contains(where: { $0.isEmpty || $0 == "." || $0 == ".." }) else { throw VaultError.invalidEntry }
+        return parts.joined(separator: "/")
     }
 }
 
