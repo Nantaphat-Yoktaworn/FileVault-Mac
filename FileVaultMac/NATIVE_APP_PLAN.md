@@ -1,67 +1,54 @@
-# FileVault Native macOS App — Delivery Plan
+# FileVault Native macOS App — Delivery Record
 
-## Decisions locked
+## Locked product decisions
 
-- Remove all PWA runtime files, Node tests, PWA documentation, build output, manifest, service worker, and web icons. Retain repository history and the `FileVaultMac/` subtree only.
-- Deliver a native macOS app as an Xcode project and a locally built `.app`; no signing or notarization in this phase.
-- Supported formats remain `NNNN1` (decrypt only), `NNNN2` (read/write through 512 MiB), and `NNNN3` (read/write above 512 MiB), with no format changes.
-- Folder selection recursively includes files, preserves POSIX relative paths, includes the selected folder's own name at the vault root, excludes `.DS_Store`, and does not represent empty directories.
-- On output conflicts, default to **Keep Both**. Offer **Replace** and **Cancel** before writing output.
-- All crypto and vault processing stays local. Passwords are not persisted.
+- FileVault is macOS-native only; the prior PWA runtime, tests, documentation, and web assets were removed.
+- Delivery is an Xcode macOS app and locally built `.app` / drag-to-install DMG. Developer ID signing and notarization are deferred.
+- Vault formats remain unchanged: `NNNN1` decrypt-only, `NNNN2` for in-memory vaults through 512 MiB, and chunked `NNNN3` above 512 MiB.
+- Folder selection recurses files, preserves the selected folder name at the vault root, skips `.DS_Store`, and does not represent empty directories.
+- Output conflicts default to **Keep Both**, with explicit **Replace** and **Cancel** choices before a final output is written.
+- Encryption, decryption, and key derivation stay local; passwords are never persisted.
 
-## Delivery sequence
+## Delivered
 
-### 1. Native project conversion and cleanup
+### Native app and Finder integration
 
-1. Create the Xcode app project around the existing `VaultCore` code, with separate `VaultCore` and test targets.
-2. Add the `.nnnn` document type and launch/open routing to the Decrypt flow.
-3. Remove PWA files only after the Xcode project and native tests build successfully on the Mac.
-4. Replace PWA-specific documentation with native build, privacy, and format-compatibility documentation.
+- Xcode project targeting macOS 14+.
+- `.nnnn` exported document type for Finder and Open With routing to the Decrypt flow.
+- FileVault shield branding in the window, Dock, and Finder through an `AppIcon` asset catalog.
+- Debug `.app` and a Release DMG with an Applications shortcut for drag-to-install distribution.
 
-### 2. Secure filesystem foundation
+### Encrypt workflow
 
-1. Add scoped-access helpers for picker/opened URLs and balance every access lifetime.
-2. Validate all untrusted decrypted paths: no absolute paths, traversal, empty components, or unsafe destination escapes.
-3. Add preflight output planning: detect every conflict before creating a final output.
-4. Implement the shared conflict resolver: Keep Both generates unique names, Replace explicitly removes only the selected target, Cancel performs no write.
-5. Route every output through a temporary sibling location. On success, close and atomically move into the final path; on error or cancellation, clean up only the operation's temporary output.
+- Choose files, choose one folder, or drag files and folders into the app.
+- Recursive source discovery with selected-root preservation, metadata exclusion, and duplicate rejection.
+- NNNN2 output through 512 MiB and 64 MiB-chunked NNNN3 streaming above that threshold.
+- Byte progress, elapsed time, and a Cancel control.
+- Temporary sibling output with atomic publication only on success; cancellation removes unpublished output.
 
-### 3. Encrypt experience
+### Decrypt workflow
 
-1. Build drag-and-drop support for files and folders, plus **Choose Files…** and **Choose Folder…**.
-2. Recursively enumerate selected folders, include the folder root in each stored path, skip `.DS_Store`, reject unreadable files, deduplicate selections, and show file count/total bytes.
-3. Keep in-memory `NNNN2` at or below 512 MiB; use 64 MiB streaming `NNNN3` above it.
-4. Report bytes processed, total bytes, percentage, elapsed time, and current phase.
-5. Make encryption cancellable between reads and chunks. Cancellation must never leave a completed-looking vault.
+- Accept one `.nnnn` vault by picker or drag-and-drop; Finder routes declared vault documents into the Decrypt flow.
+- Detect NNNN1, NNNN2, and NNNN3 formats before decryption.
+- Use temporary output directories and publish only after integrity validation succeeds.
+- Show generic wrong-password-or-damaged-vault feedback for authentication failures.
+- Support byte progress and cancellation for streaming vaults.
 
-### 4. Decrypt experience
+### Output safety
 
-1. Accept a single `.nnnn` vault by drag-and-drop, picker, Finder double-click, or Open With.
-2. Inspect only the magic/header before password submission; route to v1/v2/v3 decoding.
-3. Plan all destination paths and resolve conflicts before final output appears.
-4. Stream v3 to temporary output while reporting byte progress; support cancellation and cleanup.
-5. Treat authentication failures as the single user-facing result: **Wrong password or damaged vault**.
+- Validate relative vault paths before restoring content.
+- Resolve destination conflicts with Keep Both, Replace, or Cancel.
+- Keep Both generates a unique name; Replace publishes the completed result; Cancel performs no write.
 
-### 5. Verification
+## Verification completed
 
-Use test-first cycles for each new behavior. The automated suite must cover:
-
-- folder traversal, selected-root preservation, `.DS_Store` exclusion, nested paths, empty files, and duplicate selection handling;
-- byte-progress totals and cancellation for v2/v3;
-- output conflicts for Keep Both, Replace, and Cancel;
-- no final vault/output after cancellation, authentication failure, truncation, or I/O failure;
-- atomic output publication and cleanup;
-- `.nnnn` magic routing and safe-path rejection;
-- PWA-format compatibility fixtures for NNNN1/2/3, including Unicode and chunk boundaries.
-
-Then build and test on the Mac with `swift test`, `xcodebuild`, and manual Finder/drop interaction. Confirm an `.nnnn` double-click opens the Decrypt flow.
+- Automated Swift suite covers format detection, v2 round trips, wrong passwords, output planning, folder discovery, NNNN3 round trips, tampering, cancellation, and incomplete-output cleanup.
+- Debug and Release Xcode builds completed successfully on the Mac.
+- The Release DMG was checksum-verified and mounted to confirm it contains `FileVault.app` and the `Applications` shortcut.
+- Manual drag-and-drop testing confirmed file and folder drops work in the Encrypt flow.
 
 ## Deferred
 
-- Developer ID signing, notarization, App Store release.
-- Password storage, recovery keys, cloud sync, accounts, telemetry.
-- Finder Quick Actions/extensions and vault previews.
-
-## Start condition
-
-Implementation begins only after SSH access to the MacBook is available, because the Xcode project and native `.app` must be built and verified there.
+- Developer ID signing, notarization, and App Store release.
+- Password storage, recovery keys, cloud sync, accounts, and telemetry.
+- Finder Quick Actions, extensions, and vault previews.

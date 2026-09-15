@@ -82,8 +82,18 @@ private struct ContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("FileVault").font(.largeTitle.bold())
-            Text("Encrypt locally. Passwords are never saved.").foregroundStyle(.secondary)
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(.tint)
+                    .frame(width: 44, height: 44)
+                    .background(.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("FileVault").font(.largeTitle.bold())
+                    Text("Local encryption. Passwords are never saved.")
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             Picker("Mode", selection: $mode) {
                 Text("Encrypt").tag(Mode.encrypt)
@@ -94,20 +104,29 @@ private struct ContentView: View {
 
             FileDropZone(onDrop: handleDroppedURLs) {
                 GroupBox(mode == .encrypt ? "Files to encrypt" : "Vault to decrypt") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 8) {
                             Button(mode == .encrypt ? "Choose Files…" : "Choose Vault…") { chooseInput() }
                             if mode == .encrypt { Button("Choose Folder…") { chooseFolder() } }
                             if !selectedURLs.isEmpty { Button("Clear") { selectedURLs.removeAll() } }
+                            Spacer()
                         }
                         if selectedURLs.isEmpty {
-                            Text("Drop files or folders here").foregroundStyle(.secondary)
+                            Label("Drop files or folders here", systemImage: "arrow.down.doc")
+                                .foregroundStyle(.secondary)
                         } else {
-                            ForEach(selectedURLs, id: \.self) { url in Text(url.lastPathComponent).lineLimit(1) }
+                            VStack(alignment: .leading, spacing: 5) {
+                                ForEach(selectedURLs, id: \.self) { url in
+                                    Label(url.lastPathComponent, systemImage: url.hasDirectoryPath ? "folder.fill" : "doc.fill")
+                                        .lineLimit(1)
+                                }
+                            }
                         }
                     }
-                    .padding(.vertical, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 5)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             NativeSecureField(placeholder: mode == .encrypt ? "Set password" : "Vault password", text: $password)

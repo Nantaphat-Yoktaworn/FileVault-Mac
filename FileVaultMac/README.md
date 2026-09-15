@@ -1,30 +1,67 @@
 # FileVault for macOS
 
-Native macOS 14+ file and folder encryption app. It creates password-protected `.nnnn` vaults locally and never saves passwords or sends data over the network.
+FileVault is a native macOS 14+ app for creating and opening password-protected `.nnnn` vaults. Encryption, decryption, and key derivation run entirely on the Mac: passwords are never saved or sent over the network.
 
-## Current format support
+## Install
+
+A drag-to-install disk image is produced at:
+
+```text
+~/Downloads/FileVault-0.1.0.dmg
+```
+
+Open the DMG and drag `FileVault.app` onto the `Applications` shortcut. The app is currently unsigned, so macOS may require **Control-click → Open** on first launch.
+
+For a development build, open this bundle in Finder (show hidden files with **Command-Shift-.**):
+
+```text
+FileVaultMac/.xcode-derived/Build/Products/Debug/FileVault.app
+```
+
+## Features
+
+- Encrypt one or more files, or recursively encrypt a selected folder.
+- Drag files and folders into the Encrypt panel, or use **Choose Files…** / **Choose Folder…**.
+- Drop or choose one `.nnnn` vault to decrypt.
+- Preserve the selected folder name and nested relative paths; ignore `.DS_Store`; empty folders are not stored.
+- Report processed and total bytes plus elapsed time while an operation runs.
+- Cancel ongoing operations. Unfinished vaults and partially restored folders are cleaned up instead of being published.
+- Resolve an existing output name with **Keep Both** (default), **Replace**, or **Cancel** before output is written.
+- Register the `.nnnn` document type for Finder and Open With.
+- Use the FileVault shield icon in the app window, Dock, and Finder.
+
+## Vault compatibility
 
 - `NNNN1`: decrypt legacy single-file vaults.
-- `NNNN2`: encrypt/decrypt vaults up to 512 MiB in memory.
-- `NNNN3`: encrypt/decrypt larger vaults using 64 MiB authenticated chunks.
+- `NNNN2`: encrypt and decrypt vaults up to 512 MiB in memory.
+- `NNNN3`: encrypt and decrypt larger vaults in 64 MiB authenticated chunks.
 
-All formats use AES-256-GCM and PBKDF2-HMAC-SHA256 with 600,000 iterations. The byte layout is compatibility-sensitive.
+All supported formats use AES-256-GCM and PBKDF2-HMAC-SHA256 with 600,000 iterations. Vault byte layouts are compatibility-sensitive and are intentionally unchanged.
 
-## Build on macOS
+## Build and verify on macOS
 
-Open `FileVault.xcodeproj` in Xcode, choose the **FileVault** scheme, and Run. The project builds an unsigned local `FileVault.app` in this phase.
-
-CLI verification:
+Open `FileVault.xcodeproj` in Xcode, select the **FileVault** scheme, and Run. Command-line verification:
 
 ```sh
 swift test
-xcodebuild -project FileVault.xcodeproj -scheme FileVault -configuration Debug CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project FileVault.xcodeproj -scheme FileVault -configuration Debug -derivedDataPath .xcode-derived CODE_SIGNING_ALLOWED=NO build
 ```
 
-## Product plan
+Create the installable DMG from a Release build:
 
-See [NATIVE_APP_PLAN.md](NATIVE_APP_PLAN.md) for the agreed native-only delivery plan and acceptance criteria.
+```sh
+xcodebuild -project FileVault.xcodeproj -scheme FileVault -configuration Release -derivedDataPath .xcode-derived-release CODE_SIGNING_ALLOWED=NO build
+rm -rf /tmp/FileVault-Installer ~/Downloads/FileVault-0.1.0.dmg
+mkdir -p /tmp/FileVault-Installer
+cp -R .xcode-derived-release/Build/Products/Release/FileVault.app /tmp/FileVault-Installer/
+ln -s /Applications /tmp/FileVault-Installer/Applications
+hdiutil create -volname FileVault -srcfolder /tmp/FileVault-Installer -ov -format UDZO ~/Downloads/FileVault-0.1.0.dmg
+```
 
-## Privacy
+## Privacy and security behavior
 
-FileVault performs encryption, decryption, and key derivation on-device. Passwords are retained only for the active operation and cleared when it finishes.
+Passwords exist only for the active operation and are cleared after it completes. Encrypt and decrypt operations write to temporary sibling locations, then publish the result only after successful completion. Authentication failures are shown as a single generic message: **Wrong password or damaged vault.**
+
+## Delivery status
+
+The core suite covers format detection, v2 round trips and wrong-password handling, output planning, folder discovery, streaming round trips, tampering, cancellation, and cleanup. The Debug and Release macOS app builds have been verified locally on the Mac. Developer ID signing, notarization, and distribution outside the local DMG remain deferred.
