@@ -1,0 +1,66 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A001 /* FileVaultMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A101 /* FileVaultMacApp.swift */; };
+		A002 /* VaultCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A102 /* VaultCore.swift */; };
+		A003 /* VaultStreaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = A103 /* VaultStreaming.swift */; };
+		A007 /* VaultFileDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A109 /* VaultFileDiscovery.swift */; };
+		A004 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A104 /* AppKit.framework */; };
+		A005 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A105 /* SwiftUI.framework */; };
+		A006 /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A106 /* UniformTypeIdentifiers.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A101 /* FileVaultMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/FileVaultMacApp/FileVaultMacApp.swift; sourceTree = "<group>"; };
+		A102 /* VaultCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/VaultCore/VaultCore.swift; sourceTree = "<group>"; };
+		A103 /* VaultStreaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/VaultCore/VaultStreaming.swift; sourceTree = "<group>"; };
+		A109 /* VaultFileDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/VaultCore/VaultFileDiscovery.swift; sourceTree = "<group>"; };
+		A104 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		A105 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		A106 /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
+		A107 /* FileVault.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FileVault.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A108 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A201 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A004 /* AppKit.framework in Frameworks */, A005 /* SwiftUI.framework in Frameworks */, A006 /* UniformTypeIdentifiers.framework in Frameworks */); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A301 = {isa = PBXGroup; children = (A302 /* Sources */, A108 /* Info.plist */, A303 /* Frameworks */, A304 /* Products */); sourceTree = "<group>"; };
+		A302 /* Sources */ = {isa = PBXGroup; children = (A101 /* FileVaultMacApp.swift */, A102 /* VaultCore.swift */, A103 /* VaultStreaming.swift */, A109 /* VaultFileDiscovery.swift */); name = Sources; sourceTree = "<group>"; };
+		A303 /* Frameworks */ = {isa = PBXGroup; children = (A104 /* AppKit.framework */, A105 /* SwiftUI.framework */, A106 /* UniformTypeIdentifiers.framework */); name = Frameworks; sourceTree = "<group>"; };
+		A304 /* Products */ = {isa = PBXGroup; children = (A107 /* FileVault.app */); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A401 /* FileVault */ = {isa = PBXNativeTarget; buildConfigurationList = A501 /* Build configuration list for PBXNativeTarget "FileVault" */; buildPhases = (A201 /* Frameworks */, A202 /* Sources */); buildRules = (); dependencies = (); name = FileVault; productName = FileVault; productReference = A107 /* FileVault.app */; productType = "com.apple.product-type.application"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A601 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2600; LastUpgradeCheck = 2600; TargetAttributes = {A401 = {CreatedOnToolsVersion = 26.0;};};}; buildConfigurationList = A502 /* Build configuration list for PBXProject "FileVault" */; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A301; productRefGroup = A304 /* Products */; projectDirPath = ""; projectRoot = ""; targets = (A401 /* FileVault */); };
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A202 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A001 /* FileVaultMacApp.swift in Sources */, A002 /* VaultCore.swift in Sources */, A003 /* VaultStreaming.swift in Sources */, A007 /* VaultFileDiscovery.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A701 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; SWIFT_VERSION = 6.0; }; name = Debug; };
+		A702 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; }; name = Release; };
+		A703 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Info.plist; MACOSX_DEPLOYMENT_TARGET = 14.0; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.nnnn.FileVault; PRODUCT_NAME = FileVault; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 6.0; }; name = Debug; };
+		A704 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Info.plist; MACOSX_DEPLOYMENT_TARGET = 14.0; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.nnnn.FileVault; PRODUCT_NAME = FileVault; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A501 /* Build configuration list for PBXNativeTarget "FileVault" */ = {isa = XCConfigurationList; buildConfigurations = (A703 /* Debug */, A704 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A502 /* Build configuration list for PBXProject "FileVault" */ = {isa = XCConfigurationList; buildConfigurations = (A701 /* Debug */, A702 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = A601 /* Project object */;
+}
