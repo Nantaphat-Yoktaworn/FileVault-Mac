@@ -1,8 +1,8 @@
-# FileVault Native macOS App — Delivery Record
+# FileVault Native Apple App — Delivery Record
 
 ## Locked product decisions
 
-- FileVault is macOS-native only; the prior PWA runtime, tests, documentation, and web assets were removed.
+- FileVault is native on macOS 14+ and iOS 17+; the prior PWA runtime, tests, documentation, and web assets were removed.
 - Delivery is an Xcode macOS app and locally built `.app` / drag-to-install DMG. Developer ID signing and notarization are deferred.
 - Vault formats remain unchanged: `NNNN1` decrypt-only, `NNNN2` for in-memory vaults through 512 MiB, and chunked `NNNN3` above 512 MiB.
 - Folder selection recurses files, preserves the selected folder name at the vault root, skips `.DS_Store`, and does not represent empty directories.
@@ -14,6 +14,8 @@
 ### Native app and Finder integration
 
 - Xcode project targeting macOS 14+.
+- Xcode project has separate `FileVaultMac` and `FileVaultiOS` schemes that compile the same portable `Sources/VaultCore` source set.
+- iPhone UI imports through Files, encrypts with 4 MiB NNNN3 streaming chunks, exports through the system picker, and decrypts NNNN1/2/3 vaults into a user-selected Files folder.
 - `.nnnn` exported document type for Finder and Open With routing to the Decrypt flow.
 - FileVault shield branding in the window, Dock, and Finder through an `AppIcon` asset catalog.
 - Debug `.app` and a Release DMG with an Applications shortcut for drag-to-install distribution.
@@ -43,7 +45,9 @@
 ## Verification completed
 
 - Automated Swift suite covers format detection, v2 round trips, wrong passwords, output planning, folder discovery, NNNN3 round trips, tampering, cancellation, and incomplete-output cleanup.
-- Debug and Release Xcode builds completed successfully on the Mac.
+- `swift test` completed successfully with 15 tests on the Mac.
+- macOS Debug and Release Xcode builds completed successfully on the Mac.
+- iOS Simulator Debug build completed, installed, and launched successfully on the Mac (`com.nnnn.FileVault.iOS`).
 - The Release DMG was checksum-verified and mounted to confirm it contains `FileVault.app` and the `Applications` shortcut.
 - Manual drag-and-drop testing confirmed file and folder drops work in the Encrypt flow.
 

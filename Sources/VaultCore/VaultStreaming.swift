@@ -10,14 +10,20 @@ public struct VaultFileSource: Sendable {
     public init(url: URL, path: String) throws {
         let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
         guard let number = attributes[.size] as? NSNumber else { throw VaultError.invalidEntry }
+        try self.init(url: url, path: path, size: number.uint64Value)
+    }
+
+    public init(url: URL, path: String, size: UInt64) throws {
+        guard !path.isEmpty else { throw VaultError.invalidEntry }
         self.url = url
         self.path = path
-        self.size = number.uint64Value
+        self.size = size
     }
 }
 
 public enum VaultStreaming {
     public static let defaultChunkSize = 64 * 1024 * 1024
+    public static let iOSDefaultChunkSize = 4 * 1024 * 1024
     private static let fixedHeaderLength = 37
     private static let maxChunkSize = 0x1000_0000
     private static let iterations: UInt32 = 600_000

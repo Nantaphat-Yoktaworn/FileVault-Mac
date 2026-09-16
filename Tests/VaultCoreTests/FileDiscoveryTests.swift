@@ -30,3 +30,15 @@ func fileDiscoveryRejectsDuplicates() throws {
         try VaultFileDiscovery.sources(for: [file, file])
     }
 }
+
+@Test("a Files-provider source can retain a previously measured size")
+func fileSourceAcceptsMeasuredSize() throws {
+    let source = try VaultFileSource(
+        url: URL(fileURLWithPath: "/provider/document.txt"),
+        path: "document.txt",
+        size: 42
+    )
+
+    #expect(source.size == 42)
+    #expect(source.path == "document.txt")
+}
