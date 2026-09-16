@@ -15,7 +15,7 @@ Open the DMG and drag `FileVault.app` onto the `Applications` shortcut. The app 
 For a development build, open this bundle in Finder (show hidden files with **Command-Shift-.**):
 
 ```text
-FileVaultMac/.xcode-derived/Build/Products/Debug/FileVault.app
+.xcode-derived/Build/Products/Debug/FileVault.app
 ```
 
 ## Features
@@ -65,3 +65,5 @@ Passwords exist only for the active operation and are cleared after it completes
 ## Delivery status
 
 The core suite covers format detection, v2 round trips and wrong-password handling, output planning, folder discovery, streaming round trips, tampering, cancellation, and cleanup. The Debug and Release macOS app builds have been verified locally on the Mac. Developer ID signing, notarization, and distribution outside the local DMG remain deferred.
+
+See [the delivery record](docs/DELIVERY.md) for the full scope and verification history.
