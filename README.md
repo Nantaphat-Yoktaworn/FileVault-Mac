@@ -32,7 +32,7 @@ For a development build, open this bundle in Finder (show hidden files with **Co
 
 ## iPhone
 
-The **FileVaultiOS** scheme builds an iPhone app for iOS 17+. It imports files, folders, and `.nnnn` vaults through the Files app; encrypts to a temporary NNNN3 vault using 4 MiB chunks; then presents the system export picker. Decryption restores into a user-selected Files folder. The app accesses security-scoped Files URLs only for the active operation and supports NNNN1, NNNN2, and NNNN3 decryption.
+The **FileVaultiOS** scheme builds an iPhone app for iOS 17+. It imports files, folders, and `.nnnn` vaults through the Files app; encrypts to a temporary NNNN3 vault using 4 MiB chunks; then presents the system export picker. Decryption restores into a user-selected Files folder. The app accesses security-scoped Files URLs only for the active operation and supports NNNN1, NNNN2, and NNNN3 decryption. The `FileVaultiOSTests` scheme verifies fixed NNNN1, NNNN2, and NNNN3 fixtures on an iPhone Simulator.
 
 Build and launch it in an available simulator from a Linux controller with:
 

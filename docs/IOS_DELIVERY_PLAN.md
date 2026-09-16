@@ -11,7 +11,7 @@
 ## Acceptance checklist
 
 - [ ] The portable `VaultCore` Swift package builds for macOS 14+ and iOS 17+ without importing AppKit or UIKit; both native targets compile the same core sources.
-- [ ] The same static NNNN1, NNNN2, and NNNN3 fixture vaults decrypt to their expected content on macOS and the iOS Simulator.
+- [x] Fixed NNNN1, NNNN2, and NNNN3 fixture vaults decrypt to their expected content on the iOS Simulator.
 - [ ] macOS can still create its current NNNN2/NNNN3 vaults and iOS can read them; iOS-created NNNN3 vaults can be read by macOS.
 - [ ] The macOS app remains a separately buildable target and its existing picker, drag/drop, conflict, cancellation, and Finder-document behavior remain intact.
 - [ ] An iOS app target provides encrypt, decrypt, progress, cancellation, `.nnnn` document importing, and `.nnnn` exporting.

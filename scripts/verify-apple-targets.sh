@@ -74,15 +74,17 @@ xcrun simctl bootstatus "$udid" -b
 
 xcodebuild \
   -project FileVault.xcodeproj \
-  -scheme FileVaultiOS \
+  -scheme FileVaultiOSTests \
   -destination "platform=iOS Simulator,id=$udid" \
   -configuration Debug \
   -derivedDataPath .xcode-derived-ios \
   CODE_SIGNING_ALLOWED=NO \
-  build
+  test
 
 app_path=".xcode-derived-ios/Build/Products/Debug-iphonesimulator/FileVault.app"
 test -d "$app_path"
+xcrun simctl boot "$udid" 2>/dev/null || true
+xcrun simctl bootstatus "$udid" -b
 xcrun simctl install "$udid" "$app_path"
 xcrun simctl launch "$udid" com.nnnn.FileVault.iOS
 REMOTE

@@ -47,7 +47,7 @@
 - Automated Swift suite covers format detection, v2 round trips, wrong passwords, output planning, folder discovery, NNNN3 round trips, tampering, cancellation, and incomplete-output cleanup.
 - `swift test` completed successfully with 15 tests on the Mac.
 - macOS Debug and Release Xcode builds completed successfully on the Mac.
-- iOS Simulator Debug build completed, installed, and launched successfully on the Mac (`com.nnnn.FileVault.iOS`).
+- iOS Simulator runs fixed NNNN1, NNNN2, and NNNN3 fixture decryption tests; its Debug app also installs and launches successfully on the Mac (`com.nnnn.FileVault.iOS`).
 - The Release DMG was checksum-verified and mounted to confirm it contains `FileVault.app` and the `Applications` shortcut.
 - Manual drag-and-drop testing confirmed file and folder drops work in the Encrypt flow.
 
