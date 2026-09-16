@@ -228,7 +228,8 @@ private struct ContentView: View {
                     let sources = try VaultFileDiscovery.sources(for: input)
                     let total = sources.reduce(UInt64(0)) { $0 + $1.size }
                     await updateProgress(0, total)
-                    let temporary = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).nnnn")
+                    let temporary = FileManager.default.temporaryDirectory
+                        .appending(path: Self.vaultExportFilename(for: input))
                     try VaultStreaming.encrypt(inputs: sources, password: secret, destination: temporary, chunkSize: VaultStreaming.iOSDefaultChunkSize, progress: { complete, total in
                         Task { await updateProgress(complete, total) }
                     }, shouldCancel: { token.isCancelled() })
@@ -272,4 +273,10 @@ private struct ContentView: View {
 
     @MainActor private func updateProgress(_ complete: UInt64, _ total: UInt64) { processedBytes = complete; totalBytes = total }
     @MainActor private func finish() { isWorking = false; cancellation = nil; password = ""; confirmation = "" }
+
+    nonisolated private static func vaultExportFilename(for input: [URL]) -> String {
+        guard input.count == 1 else { return "FileVault.nnnn" }
+        let filename = input[0].deletingPathExtension().lastPathComponent
+        return filename.isEmpty ? "FileVault.nnnn" : "\(filename).nnnn"
+    }
 }

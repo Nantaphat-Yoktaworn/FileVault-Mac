@@ -12,6 +12,8 @@
     <string>APPL</string>
     <key>CFBundleDisplayName</key>
     <string>FileVault</string>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
