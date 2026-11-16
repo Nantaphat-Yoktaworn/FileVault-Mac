@@ -32,7 +32,7 @@ See [DELIVERY.md](DELIVERY.md) for the full scope and verification summary.
 
 ### 2. Preserve format compatibility before refactoring
 
-1. Add checked-in fixture vaults and matching plaintext manifests under `Tests/VaultCoreTests/Fixtures/` for NNNN1, NNNN2, and NNNN3.
+1. Add checked-in fixture vaults under `Tests/FileVaultiOSTests/Fixtures/` for NNNN1, NNNN2, and NNNN3.
 2. Add fixture tests that assert format detection, complete restored filenames/content, wrong-password failure, tamper failure, and rejection of malformed input.
 3. Add a test for an iOS-oriented small NNNN3 chunk size, then verify that the macOS build decodes it. Continue to use the current 64 MiB policy on macOS unless a separate product decision changes it.
 4. Use TDD for each core behavior: make the fixture or behavioral test fail first, implement the smallest change, run the focused test, then run the full suite.
@@ -40,16 +40,16 @@ See [DELIVERY.md](DELIVERY.md) for the full scope and verification summary.
 ### 3. Improve core APIs for Files-provider URLs
 
 1. Keep `VaultFileSource` URL-based, but let its size be supplied from a validated resource value when needed so the iOS UI can retain access to a Files-provider URL for the full operation.
-2. Keep security-scoped resource acquisition/lifetime in an iOS `FileAccessScope` helper that is owned by the operation task. It must release every successful scope when the task finishes, fails, or is cancelled.
+2. Keep security-scoped resource acquisition/lifetime in an iOS `SecurityScopedURLs` helper that is owned by the operation task. It must release every successful scope when the task finishes, fails, or is cancelled.
 3. Review `VaultFileDiscovery` against iOS document-provider behavior. Do not assume access outside the selected tree; reject unreadable sources clearly. Preserve the existing symlink and unsafe-path protections.
 4. Never use `Data(contentsOf:)` for an iOS large-file path. iOS encryption should choose NNNN3 streaming by default with a conservative configurable chunk size (initial value: 4 MiB). NNNN3 records its chunk size, so this remains interoperable with macOS.
 
 ### 4. Restructure macOS resources and target metadata
 
-1. Rename the current app target/scheme to `FileVaultMac` while retaining the product display name `FileVault` and its bundle identifier unless the project requires a migration.
-2. Move macOS-only `Info.plist` and assets under a macOS-specific resource directory. Retain the existing `.nnnn` UTI declaration.
-3. Give `VaultCore` no app resources. Create separate iOS `Info.plist` and asset catalog, using the same UTI identifier and filename extension.
-4. Build the existing macOS Debug and Release application with no signing required. Retain the DMG path only as a macOS distribution concern.
+1. Rename the current app target/scheme to `FileVaultMac` while retaining the product display name `FileVault` (`com.nnnn.FileVault`).
+2. Keep macOS `Info.plist` and `Assets.xcassets` at the repository root and retain the existing `.nnnn` UTI declaration (`com.nnnn.filevault.vault`).
+3. Give `VaultCore` no app resources. Create separate iOS `Info.plist` and asset catalog under `Sources/FileVaultiOSApp/`, using the same UTI identifier and filename extension.
+4. Build the existing macOS Debug and Release application with no Developer ID signing required. Retain the DMG path only as a macOS distribution concern.
 
 ### 5. Build the iOS app target
 
@@ -57,9 +57,9 @@ See [DELIVERY.md](DELIVERY.md) for the full scope and verification summary.
 2. Implement an operation screen matching the macOS functions rather than its AppKit layout:
    - Encrypt/decrypt segmented mode.
    - `fileImporter` for files/folders and one `.nnnn` vault.
-   - `fileExporter` for encrypted output.
-   - A folder picker backed by `UIDocumentPickerViewController` for a decryption destination.
-   - Password and confirmation `SecureField`s, byte progress, elapsed time, cancel, and generic authentication-error copy.
+   - A `UIDocumentPickerViewController` export picker (`ExportPicker`) for encrypted output.
+   - A folder picker backed by `UIDocumentPickerViewController` (`FolderPicker`) for a decryption destination.
+   - Password and confirmation `SecureField`s, byte progress, cancel, and generic authentication-error copy.
 3. Keep selected Files URLs scoped for the whole detached operation, not merely the picker callback. Run file work off the main actor; publish UI updates on the main actor.
 4. On decrypt, write to an unpublished temporary sibling inside the selected folder, validate each restored relative path, then atomically publish it. If the provider cannot support required atomic rename semantics, fail before writing and explain that a local Files folder is required.
 5. Register `com.nnnn.filevault.vault` as an imported/exported document type and confirm it appears in the iOS Files importer. A share extension is explicitly deferred.

@@ -167,24 +167,26 @@ public enum VaultStreaming {
         let chunks = total == 0 ? 0 : (total + UInt64(chunkSize) - 1) / UInt64(chunkSize)
         var complete: UInt64 = 0
         if chunks > UInt64(UInt32.max) { throw VaultError.malformedVault }
-        for i in 1...Int(chunks) {
-            guard !shouldCancel() else { throw VaultError.cancelled }
-            let plainLength = Int(min(UInt64(chunkSize), total - UInt64(i - 1) * UInt64(chunkSize)))
-            let cipher = try readExactly(input, count: plainLength + 16)
-            let plain = try open(cipher, key: key, prefix: prefix, counter: UInt32(i), isLast: i == Int(chunks))
-            guard plain.count == plainLength else { throw VaultError.malformedVault }
-            var offset = 0
-            while offset < plain.count {
-                guard let active = output else { throw VaultError.malformedVault }
-                let take = Int(min(UInt64(plain.count - offset), remaining))
-                guard take > 0 else { throw VaultError.malformedVault }
-                try active.write(contentsOf: plain.subdata(in: offset..<(offset + take)))
-                offset += take
-                remaining -= UInt64(take)
-                if remaining == 0 { try openNext() }
+        if chunks > 0 {
+            for i in 1...Int(chunks) {
+                guard !shouldCancel() else { throw VaultError.cancelled }
+                let plainLength = Int(min(UInt64(chunkSize), total - UInt64(i - 1) * UInt64(chunkSize)))
+                let cipher = try readExactly(input, count: plainLength + 16)
+                let plain = try open(cipher, key: key, prefix: prefix, counter: UInt32(i), isLast: i == Int(chunks))
+                guard plain.count == plainLength else { throw VaultError.malformedVault }
+                var offset = 0
+                while offset < plain.count {
+                    guard let active = output else { throw VaultError.malformedVault }
+                    let take = Int(min(UInt64(plain.count - offset), remaining))
+                    guard take > 0 else { throw VaultError.malformedVault }
+                    try active.write(contentsOf: plain.subdata(in: offset..<(offset + take)))
+                    offset += take
+                    remaining -= UInt64(take)
+                    if remaining == 0 { try openNext() }
+                }
+                complete = try checkedAdd(complete, UInt64(plain.count))
+                progress?(complete, total)
             }
-            complete = try checkedAdd(complete, UInt64(plain.count))
-            progress?(complete, total)
         }
         try output?.close()
         output = nil
@@ -255,8 +257,7 @@ public enum VaultStreaming {
     }
 
     private static func validateRelativePath(_ path: String) throws {
-        let components = path.split(separator: "/", omittingEmptySubsequences: true)
-        guard !path.hasPrefix("/"), !components.isEmpty, !components.contains("..") else { throw VaultError.invalidEntry }
+        try VaultOutput.safeRelativePath(path)
     }
 }
 

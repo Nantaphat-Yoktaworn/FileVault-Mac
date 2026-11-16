@@ -91,7 +91,8 @@ public enum VaultOutput {
         }
     }
 
-    private static func safeRelativePath(_ path: String) throws -> String {
+    @discardableResult
+    static func safeRelativePath(_ path: String) throws -> String {
         let parts = path.split(separator: "/", omittingEmptySubsequences: false)
         guard !path.hasPrefix("/"), !parts.isEmpty, !parts.contains(where: { $0.isEmpty || $0 == "." || $0 == ".." }) else { throw VaultError.invalidEntry }
         return parts.joined(separator: "/")

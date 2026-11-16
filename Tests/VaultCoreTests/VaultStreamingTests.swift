@@ -1,3 +1,5 @@
+import CommonCrypto
+import CryptoKit
 import Foundation
 import Testing
 @testable import VaultCore
@@ -106,4 +108,106 @@ func v3RejectsTampering() throws {
     #expect(throws: VaultError.authenticationFailed) {
         try VaultStreaming.decrypt(vault: vault, password: "password", outputDirectory: root.appending(path: "out"))
     }
+}
+
+@Test("v3 streaming encryption rejects unsafe relative paths")
+func v3EncryptionRejectsUnsafeRelativePaths() throws {
+    let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    let sourceURL = root.appending(path: "source.bin")
+    let vault = root.appending(path: "vault.nnnn")
+    try Data("abc".utf8).write(to: sourceURL)
+
+    let unsafePaths = [
+        ".",
+        "./file.txt",
+        "docs/./file.txt",
+        "docs//file.txt",
+        "docs/",
+        "/abs/file.txt",
+        "../escape.txt",
+        "docs/../escape.txt"
+    ]
+
+    for unsafePath in unsafePaths {
+        let source = try VaultFileSource(url: sourceURL, path: unsafePath)
+        #expect(throws: VaultError.invalidEntry) {
+            try VaultStreaming.encrypt(inputs: [source], password: "password", destination: vault, chunkSize: 1_000)
+        }
+        #expect(!FileManager.default.fileExists(atPath: vault.path))
+    }
+}
+
+@Test("v3 streaming decryption rejects unsafe relative paths in manifest")
+func v3DecryptionRejectsUnsafeRelativePaths() throws {
+    let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+    let unsafePaths = [
+        "",
+        ".",
+        "./file.txt",
+        "docs/./file.txt",
+        "docs//file.txt",
+        "docs/",
+        "/abs/file.txt",
+        "../escape.txt",
+        "docs/../escape.txt"
+    ]
+
+    for (index, unsafePath) in unsafePaths.enumerated() {
+        let vault = root.appending(path: "unsafe-\(index).nnnn")
+        let output = root.appending(path: "out-\(index)")
+        try writeSyntheticEmptyV3Vault(entryName: unsafePath, password: "password", to: vault)
+
+        #expect(throws: VaultError.invalidEntry) {
+            try VaultStreaming.decrypt(vault: vault, password: "password", outputDirectory: output)
+        }
+        #expect(!FileManager.default.fileExists(atPath: output.path))
+    }
+}
+
+private func writeSyntheticEmptyV3Vault(entryName: String, password: String, to destination: URL) throws {
+    struct ManifestFile: Encodable { let name: String; let size: UInt64 }
+    struct Manifest: Encodable { let v: Int; let chunkSize: Int; let totalSize: UInt64; let files: [ManifestFile] }
+
+    let salt = Data(repeating: 0x11, count: 16)
+    let prefix = Data(repeating: 0x22, count: 8)
+    let chunkSize = 1_024
+    let passwordBytes = Array(password.utf8)
+    var derived = [UInt8](repeating: 0, count: 32)
+    let status = salt.withUnsafeBytes { saltBuffer in
+        CCKeyDerivationPBKDF(
+            CCPBKDFAlgorithm(kCCPBKDF2),
+            passwordBytes, passwordBytes.count,
+            saltBuffer.bindMemory(to: UInt8.self).baseAddress, salt.count,
+            CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256), 600_000,
+            &derived, derived.count
+        )
+    }
+    precondition(status == kCCSuccess)
+    let key = SymmetricKey(data: Data(derived))
+
+    let manifestBytes = try JSONEncoder().encode(
+        Manifest(v: 3, chunkSize: chunkSize, totalSize: 0, files: [ManifestFile(name: entryName, size: 0)])
+    )
+    var nonceBytes = prefix
+    nonceBytes.append(contentsOf: [0, 0, 0, 0])
+    let aad = Data([0, 0, 0, 0, 0])
+    let sealed = try AES.GCM.seal(manifestBytes, using: key, nonce: try AES.GCM.Nonce(data: nonceBytes), authenticating: aad)
+    let manifestCipher = sealed.ciphertext + sealed.tag
+
+    var vault = Data("NNNN3".utf8)
+    vault.append(salt)
+    vault.append(prefix)
+    for shift in [24, 16, 8, 0] {
+        vault.append(UInt8((UInt32(chunkSize) >> shift) & 0xff))
+    }
+    for shift in [24, 16, 8, 0] {
+        vault.append(UInt8((UInt32(manifestCipher.count) >> shift) & 0xff))
+    }
+    vault.append(manifestCipher)
+    try vault.write(to: destination, options: .atomic)
 }

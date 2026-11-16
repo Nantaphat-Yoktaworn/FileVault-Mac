@@ -5,7 +5,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-for tool in xcodebuild hdiutil ditto mktemp shasum; do
+for tool in xcodebuild codesign hdiutil ditto mktemp shasum; do
   if ! command -v "$tool" >/dev/null; then
     echo "error: required tool '$tool' not found" >&2
     exit 1
@@ -41,6 +41,8 @@ staging_dir="$(mktemp -d "$build_dir/dmg-staging.XXXXXX")"
 trap 'rm -rf "$staging_dir"' EXIT
 
 ditto "$app_bundle" "$staging_dir/FileVault.app"
+codesign --force --sign - "$staging_dir/FileVault.app"
+codesign --verify --strict "$staging_dir/FileVault.app"
 ln -s /Applications "$staging_dir/Applications"
 
 dmg_path="$dist_dir/FileVault-$version.dmg"

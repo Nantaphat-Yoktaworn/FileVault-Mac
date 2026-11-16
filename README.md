@@ -15,7 +15,7 @@ FileVault is a native macOS 14+ and iOS 17+ app for creating and opening passwor
 
 ### iPhone (`FileVaultiOS`)
 - Native SwiftUI app targeting iOS 17+.
-- Import files, folders, and `.nnnn` vaults from the system Files app (`fileImporter`) and export encrypted `.nnnn` vaults (`fileExporter`).
+- Import files, folders, and `.nnnn` vaults from the system Files app (`fileImporter`) and export encrypted `.nnnn` vaults using a `UIDocumentPickerViewController` export picker.
 - Encrypt using 4 MiB chunked `NNNN3` streaming to keep memory usage bounded on mobile devices.
 - Decrypt `NNNN1`, `NNNN2`, and `NNNN3` vaults into a user-selected Files folder with live byte progress and cancellation.
 - Acquire security-scoped Files access in the app layer only for the duration of each active operation.
@@ -100,7 +100,7 @@ Continuous integration runs the same core, macOS, and iOS Simulator verification
 
 ## Package and Install (macOS DMG)
 
-Create a compressed drag-to-install DMG from an unsigned Release build using [`scripts/build-dmg.sh`](scripts/build-dmg.sh):
+Create a compressed drag-to-install DMG from a locally built Release app (ad-hoc signed, without Developer ID signing or notarization) using [`scripts/build-dmg.sh`](scripts/build-dmg.sh):
 
 ```sh
 ./scripts/build-dmg.sh
@@ -112,7 +112,7 @@ This outputs:
 dist/FileVault-0.1.0.dmg
 ```
 
-Open the DMG and drag `FileVault.app` onto the `Applications` shortcut. Because local builds are unsigned (Developer ID signing, notarization, and App Store distribution remain outside the current release scope), macOS Gatekeeper may require **Control-click → Open** on first launch.
+Open the DMG and drag `FileVault.app` onto the `Applications` shortcut. Because local builds do not include Developer ID signing or notarization, macOS Gatekeeper may require **Control-click → Open** on first launch.
 
 ## Documentation
 
