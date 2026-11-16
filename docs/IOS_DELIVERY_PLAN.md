@@ -10,14 +10,16 @@
 
 ## Acceptance checklist
 
-- [ ] The portable `VaultCore` Swift package builds for macOS 14+ and iOS 17+ without importing AppKit or UIKit; both native targets compile the same core sources.
+- [x] The portable `VaultCore` Swift package builds for macOS 14+ and iOS 17+ without importing AppKit or UIKit; both native targets compile the same core sources.
 - [x] Fixed NNNN1, NNNN2, and NNNN3 fixture vaults decrypt to their expected content on the iOS Simulator.
-- [ ] macOS can still create its current NNNN2/NNNN3 vaults and iOS can read them; iOS-created NNNN3 vaults can be read by macOS.
-- [ ] The macOS app remains a separately buildable target and its existing picker, drag/drop, conflict, cancellation, and Finder-document behavior remain intact.
-- [ ] An iOS app target provides encrypt, decrypt, progress, cancellation, `.nnnn` document importing, and `.nnnn` exporting.
-- [ ] iOS starts and ends security-scoped Files access in the UI/application layer, never in `VaultCore`.
-- [ ] Decryption restores into a user-selected folder and keeps the existing temporary-sibling/atomic-publication guarantee.
-- [ ] All core tests, macOS app builds, and iOS Simulator tests/builds pass from `scripts/verify-apple-targets.sh`.
+- [ ] macOS can still create its current NNNN2/NNNN3 vaults and iOS can read them; iOS-created NNNN3 vaults can be read by macOS (covered at core codec/fixture level; end-to-end physical-device transfer remains outside simulator verification).
+- [x] The macOS app remains a separately buildable target and retains its existing picker, drag/drop, conflict, cancellation, and Finder-document behavior.
+- [x] An iOS app target provides encrypt, decrypt, progress, cancellation, `.nnnn` document importing, and `.nnnn` exporting.
+- [x] iOS starts and ends security-scoped Files access in the UI/application layer, never in `VaultCore`.
+- [ ] Decryption restores into a user-selected folder and keeps the existing temporary-sibling/atomic-publication guarantee (verified in `VaultCore` tests; physical Files-provider verification on iPhone remains deferred).
+- [x] All core tests, macOS app builds, and iOS Simulator tests/builds pass from `scripts/verify-apple-targets.sh`.
+
+See [DELIVERY.md](DELIVERY.md) for the full scope and verification summary.
 
 ## Implementation sequence
 
@@ -63,14 +65,13 @@
 5. Register `com.nnnn.filevault.vault` as an imported/exported document type and confirm it appears in the iOS Files importer. A share extension is explicitly deferred.
 6. Do not claim reliable arbitrary-duration background encryption: iOS may suspend the app. Use a foreground operation with cancellation and a background task assertion only to finish a transition safely.
 
-### 6. Test and verify on the Mac
+### 6. Test and verify on macOS
 
-1. Use `nnnnmacbook`, verified as `NNNNs-MacBook-Air.local` with Xcode 26.6 and available iOS Simulator runtimes.
-2. Run portable core tests through SwiftPM and the Xcode test target.
-3. Build and test the macOS target without signing.
-4. Boot an available iPhone simulator, build and test `FileVaultiOS` with signing disabled, install it, launch it, and verify the process/application identifier is present.
-5. Perform a focused simulator smoke test for: importing a fixture vault, rejecting a wrong password, completing a small streaming round trip, and showing the selected destination workflow. Automated unit tests establish the encryption results; this smoke test establishes application integration.
-6. Run `scripts/verify-apple-targets.sh` from the controller checkout as the final reproducible verification command.
+1. Run on a macOS host with Xcode and available iOS Simulator runtimes.
+2. Run portable core tests through SwiftPM (`swift test`) and the Xcode iOS test target (`FileVaultiOSTests`).
+3. Build the macOS target (`FileVaultMac`) in Debug and Release with `CODE_SIGNING_ALLOWED=NO`.
+4. Boot an available iPhone simulator, run `FileVaultiOSTests` with signing disabled, install the built `FileVault.app`, and launch `com.nnnn.FileVault.iOS`.
+5. Run `./scripts/verify-apple-targets.sh` from the repository root as the final reproducible verification command.
 
 ## Manual work that remains outside this delivery
 

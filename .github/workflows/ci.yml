@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Inspect toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Lint property lists and scripts
+        run: |
+          plutil -lint Info.plist Sources/FileVaultiOSApp/Info.plist
+          bash -n scripts/*.sh
+
+      - name: Run SwiftPM unit tests
+        run: swift test
+
+      - name: Build FileVaultMac (Debug)
+        run: |
+          xcodebuild \
+            -project FileVault.xcodeproj \
+            -scheme FileVaultMac \
+            -configuration Debug \
+            -derivedDataPath .xcode-derived-mac \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Build FileVaultMac (Release)
+        run: |
+          xcodebuild \
+            -project FileVault.xcodeproj \
+            -scheme FileVaultMac \
+            -configuration Release \
+            -derivedDataPath .xcode-derived-mac-release \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Run FileVaultiOSTests on an available iPhone simulator
+        run: |
+          udid="$(xcrun simctl list devices available | awk '
+            /^-- iOS / { in_ios = 1; found_in_section = 0; next }
+            /^-- / { in_ios = 0 }
+            in_ios && !found_in_section && /iPhone/ && match($0, /[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}/) {
+              last_udid = substr($0, RSTART, RLENGTH)
+              found_in_section = 1
+            }
+            END { if (last_udid != "") print last_udid }
+          ')"
+          if [[ -z "$udid" ]]; then
+            echo "error: no available iPhone simulator found" >&2
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Using iPhone simulator UDID: $udid"
+          xcrun simctl boot "$udid" 2>/dev/null || true
+          xcrun simctl bootstatus "$udid" -b
+          xcodebuild \
+            -project FileVault.xcodeproj \
+            -scheme FileVaultiOSTests \
+            -destination "platform=iOS Simulator,id=$udid" \
+            -configuration Debug \
+            -derivedDataPath .xcode-derived-ios \
+            CODE_SIGNING_ALLOWED=NO \
+            test

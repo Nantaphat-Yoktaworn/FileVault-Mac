@@ -1,6 +1,10 @@
 .build/
-.xcode-derived/
+.swiftpm/
+.xcode-derived*
 DerivedData/
+build/
+dist/
+*.dmg
 *.xcuserstate
 xcuserdata/
 .DS_Store
